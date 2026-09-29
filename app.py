@@ -6,14 +6,18 @@ from keras.applications.inception_resnet_v2 import preprocess_input
 import numpy as np
 import os
 import json
-from huggingface_hub import login, upload_folder
+from huggingface_hub import login, upload_folder,hf_hub_download
 
-login()
+# login()
 
-# Push your model files
-upload_folder(folder_path="/home/hemant/code/NutriVision/models", repo_id="Bhavesh540/NutriVision", repo_type="model")
+# # Push your model files
+# upload_folder(folder_path="/home/hemant/code/NutriVision/models", repo_id="Bhavesh540/NutriVision", repo_type="model")
 
-
+# Download Model
+model_path = hf_hub_download(
+    repo_id='Bhavesh540/NutriVision',
+    filename='FoodDetection.keras'
+)
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -26,7 +30,7 @@ app = Flask(__name__)
 categories = category()
 
 model = keras.models.load_model(
-    "models/FoodDetection.keras"
+    model_path
 )
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")

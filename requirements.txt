@@ -1,0 +1,7 @@
+Flask
+tensorflow
+numpy
+Pillow
+python-dotenv
+huggingface_hub
+gunicorn

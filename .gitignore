@@ -1,0 +1,13 @@
+# Api key holder
+.env
+
+# python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# models
+models/
+
+# venv
+.venv/

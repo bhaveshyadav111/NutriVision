@@ -1,0 +1,285 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>NutriVision — Food Classifier</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+
+  <body>
+    <div class="background-shape shape-one"></div>
+    <div class="background-shape shape-two"></div>
+
+    <header class="navbar">
+      <div class="logo">
+        <div class="logo-icon">N</div>
+        <span>NutriVision</span>
+      </div>
+
+      <div class="model-status">
+        <span class="status-dot"></span>
+        AI FOOD CLASSIFIER
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <div class="eyebrow">FOOD RECOGNITION · AI VISION</div>
+
+        <h1>
+          What's on your
+          <span>plate?</span>
+        </h1>
+
+        <p>
+          Upload a photo and let our trained deep-learning model identify the
+          dish for you.
+        </p>
+      </section>
+
+      <section class="workspace">
+        <!-- LEFT: UPLOAD -->
+        <div class="card upload-card">
+          <div class="section-heading">
+            <div>
+              <span class="step">01</span>
+              <h2>Upload your dish</h2>
+            </div>
+          </div>
+
+          <form action="/predict" method="POST" enctype="multipart/form-data">
+            <label for="imageInput" class="upload-area" id="uploadArea">
+              <input
+                type="file"
+                id="imageInput"
+                name="image"
+                accept="image/png,image/jpeg,image/webp"
+                required
+              />
+
+              <div class="upload-content" id="uploadContent">
+                <div class="upload-circle">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 16V4M12 4L7 9M12 4L17 9"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M5 14V18C5 19.1 5.9 20 7 20H17C18.1 20 19 19.1 19 18V14"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </div>
+
+                <h3>Drop your food photo here</h3>
+
+                <p>or <span>browse from your device</span></p>
+
+                <small>JPG · PNG · WEBP · MAX 8 MB</small>
+              </div>
+
+              <div class="image-preview hidden" id="imagePreview">
+                <img id="previewImg" alt="Selected food" />
+
+                <div class="change-photo">
+                  <span>Change photo</span>
+                </div>
+              </div>
+            </label>
+
+            <button class="analyze-btn" type="submit">
+              <span>Identify this dish</span>
+
+              <span class="arrow"> → </span>
+            </button>
+          </form>
+
+          <div class="tip">
+            <span>✦</span>
+            For best results, use a clear photo with the dish visible.
+          </div>
+        </div>
+
+        <!-- RIGHT: RESULT -->
+        <div class="card result-card">
+          <div class="section-heading">
+            <div>
+              <span class="step">02</span>
+              <h2>Prediction</h2>
+            </div>
+
+            <div class="ai-badge">
+              <span></span>
+              MODEL READY
+            </div>
+          </div>
+
+          {% if food %}
+
+          <div class="result-content">
+            <div class="result-label">PREDICTED DISH</div>
+
+            <h2 class="food-name">{{ food }}</h2>
+
+            <div class="confidence-section">
+              <div class="confidence-top">
+                <span>Model confidence</span>
+
+                <strong> {{ "%.1f"|format(confidence) }}% </strong>
+              </div>
+
+              <div class="confidence-track">
+                <div class="confidence-fill"></div>
+              </div>
+            </div>
+
+            <div class="result-message">
+              {% if confidence >= 80 %}
+              <div class="message-icon">✓</div>
+              <div>
+                <strong>Very confident prediction</strong>
+                <p>The model is highly confident about this dish.</p>
+              </div>
+
+              {% elif confidence >= 60 %}
+              <div class="message-icon">◐</div>
+              <div>
+                <strong>Strong prediction</strong>
+                <p>The model has a good level of confidence.</p>
+              </div>
+
+              {% else %}
+              <div class="message-icon">?</div>
+              <div>
+                <strong>Lower confidence</strong>
+                <p>Try a clearer photo for a more reliable prediction.</p>
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="prediction-meta">
+              <div class="nutrition-section">
+                <div class="nutrition-heading">
+                  <div>
+                    <span class="nutrition-label">NUTRITION ESTIMATE</span>
+                    <h3>What's in this dish?</h3>
+                  </div>
+
+                  <span class="serving"> {{ nutrition.serving }} </span>
+                </div>
+
+                <div class="nutrition-grid">
+                  <div class="nutrition-card calories">
+                    <span>Calories</span>
+                    <strong>{{ nutrition.calories }}</strong>
+                    <small>kcal</small>
+                  </div>
+
+                  <div class="nutrition-card">
+                    <span>Protein</span>
+                    <strong>{{ nutrition.protein }}</strong>
+                    <small>g</small>
+                  </div>
+
+                  <div class="nutrition-card">
+                    <span>Carbs</span>
+                    <strong>{{ nutrition.carbs }}</strong>
+                    <small>g</small>
+                  </div>
+
+                  <div class="nutrition-card">
+                    <span>Fat</span>
+                    <strong>{{ nutrition.fat }}</strong>
+                    <small>g</small>
+                  </div>
+
+                  <div class="nutrition-card">
+                    <span>Fiber</span>
+                    <strong>{{ nutrition.fiber }}</strong>
+                    <small>g</small>
+                  </div>
+                </div>
+
+                <p class="nutrition-disclaimer">
+                  Nutrition values are AI-generated estimates for a typical
+                  serving.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {% else %}
+
+          <div class="empty-result">
+            <div class="plate-icon">
+              <span>🍽</span>
+            </div>
+
+            <h3>Your prediction will appear here</h3>
+
+            <p>Upload a food photo and the AI model will identify the dish.</p>
+
+            <div class="empty-line"></div>
+
+            <span class="waiting"> WAITING FOR IMAGE </span>
+          </div>
+
+          {% endif %}
+        </div>
+      </section>
+
+      <footer>
+        <span>NutriVision</span>
+        <span>•</span>
+        <span>TensorFlow / Keras</span>
+        <span>•</span>
+        <span>80-class food recognition</span>
+      </footer>
+    </main>
+
+    <script>
+      const input = document.getElementById("imageInput");
+      const preview = document.getElementById("imagePreview");
+      const previewImg = document.getElementById("previewImg");
+      const uploadContent = document.getElementById("uploadContent");
+
+      input.addEventListener("change", function () {
+        const file = this.files[0];
+
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+          alert("Please select an image.");
+          this.value = "";
+          return;
+        }
+
+        const imageURL = URL.createObjectURL(file);
+
+        previewImg.src = imageURL;
+
+        uploadContent.classList.add("hidden");
+        preview.classList.remove("hidden");
+      });
+    </script>
+  </body>
+</html>

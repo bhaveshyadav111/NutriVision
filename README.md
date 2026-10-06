@@ -76,8 +76,5 @@ GEMINI_API_KEY=
 
 The trained model is hosted on **Hugging Face** and downloaded by the application.
 
-## 👨‍💻 Author
-
-**Bhavesh Yadav**
-
-[GitHub](https://github.com/bhaveshyadav111)
+# App is live :
+https://nutrivision1.streamlit.app/

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+import streamlit as st
 import keras
 from PIL import Image
 from categories import category
@@ -6,43 +6,62 @@ from keras.applications.inception_resnet_v2 import preprocess_input
 import numpy as np
 import os
 import json
-from huggingface_hub import login, upload_folder,hf_hub_download
-
-# login()
-
-# # Push your model files
-# upload_folder(folder_path="/home/hemant/code/NutriVision/models", repo_id="Bhavesh540/NutriVision", repo_type="model")
-
-# Download Model
-model_path = hf_hub_download(
-    repo_id='Bhavesh540/NutriVision',
-    filename='FoodDetection.keras'
-)
-
+from huggingface_hub import hf_hub_download
 from dotenv import load_dotenv
-load_dotenv()
-
 from google import genai
 
 
-app = Flask(__name__)
+# -----------------------------
+# Page Configuration
+# -----------------------------
 
-categories = category()
-
-model = keras.models.load_model(
-    model_path
+st.set_page_config(
+    page_title="NutriVision",
+    page_icon="🍽️",
+    layout="centered"
 )
+
+
+# -----------------------------
+# Load Environment Variables
+# -----------------------------
+
+load_dotenv()
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
-    raise ValueError(
-        "GEMINI_API_KEY environment variable is not set."
+    st.error("GEMINI_API_KEY environment variable is not set.")
+    st.stop()
+
+
+# -----------------------------
+# Load Model
+# -----------------------------
+
+@st.cache_resource
+def load_model():
+
+    model_path = hf_hub_download(
+        repo_id="Bhavesh540/NutriVision",
+        filename="FoodDetection.keras"
     )
+
+    return keras.models.load_model(model_path)
+
+
+model = load_model()
+
+categories = category()
 
 client = genai.Client(
     api_key=GEMINI_API_KEY
 )
+
+
+# -----------------------------
+# Gemini Nutrition Function
+# -----------------------------
 
 def get_nutrition(food_name):
 
@@ -87,9 +106,9 @@ Rules:
             contents=prompt
         )
 
-        # Remove possible markdown formatting
         text = response.text.strip()
 
+        # Remove markdown code fences if Gemini returns them
         if text.startswith("```"):
             text = text.replace("```json", "")
             text = text.replace("```", "")
@@ -103,7 +122,6 @@ Rules:
 
         print("Gemini error:", e)
 
-        # Fallback values if Gemini fails
         return {
             "serving": "Not available",
             "calories": 0,
@@ -113,67 +131,124 @@ Rules:
             "fiber": 0
         }
 
-@app.route("/")
-@app.route("/home")
-def home():
 
-    return render_template(
-        "index.html",
-        food=None,
-        confidence=None,
-        nutrition=None
-    )
+# -----------------------------
+# Prediction Function
+# -----------------------------
 
-@app.route("/predict", methods=["POST"])
-def predict():
+def predict_food(image):
 
-    if "image" not in request.files:
-        return "No image uploaded", 400
-    
-    image_file = request.files["image"]
-
-    if image_file.filename == "":
-        return "No image selected", 400
-    
-    # convert from Image to PIL 
-
-    image = Image.open(image_file).convert("RGB")
+    image = image.convert("RGB")
 
     image = image.resize((256, 256))
 
     image = keras.utils.img_to_array(image)
 
-    pre_image = preprocess_input(image)
+    image = preprocess_input(image)
 
-    pre_image = np.expand_dims(pre_image,axis=0) # one batch
-    prediction = model.predict(pre_image)
+    image = np.expand_dims(image, axis=0)
+
+    prediction = model.predict(image, verbose=0)
 
     max_prob_index = np.argmax(prediction[0])
 
     predicted_food = categories[max_prob_index]
+
     confidence = float(prediction[0][max_prob_index])
 
-    confidence_percentage = confidence * 100
+    return predicted_food, confidence
 
 
-    print("--------------------------------")
-    print("Predicted food:", predicted_food)
-    print("Confidence:", confidence_percentage)
-    print("--------------------------------")
+# -----------------------------
+# UI
+# -----------------------------
 
-    nutrition = get_nutrition(
-        predicted_food
+st.title("🍽️ NutriVision")
+
+st.subheader("AI Food Recognition & Nutrition Analyzer")
+
+st.write(
+    "Upload an image of food and NutriVision will identify the dish "
+    "and estimate its nutritional information."
+)
+
+
+uploaded_file = st.file_uploader(
+    "Upload a food image",
+    type=["jpg", "jpeg", "png"]
+)
+
+
+if uploaded_file is not None:
+
+    image = Image.open(uploaded_file)
+
+    st.image(
+        image,
+        caption="Uploaded Image",
+        width="stretch"
     )
 
-    return render_template(
-        "index.html",
-        food=predicted_food,
-        confidence=confidence_percentage,
-        nutrition=nutrition
-    )
+    if st.button("🔍 Analyze Food", type="primary"):
 
-if __name__ == "__main__":
+        with st.spinner("Analyzing food..."):
 
-    app.run(
-        debug=True
-    )
+            # Food prediction
+            predicted_food, confidence = predict_food(image)
+
+            # Nutrition prediction
+            nutrition = get_nutrition(predicted_food)
+
+        st.success("Analysis complete!")
+
+        # -------------------------
+        # Prediction Result
+        # -------------------------
+
+        st.subheader("🍴 Food Detected")
+
+        st.write(f"### {predicted_food}")
+
+        st.progress(
+            min(confidence, 1.0),
+            text=f"Confidence: {confidence * 100:.2f}%"
+        )
+
+        # -------------------------
+        # Nutrition
+        # -------------------------
+
+        st.subheader("🥗 Estimated Nutrition")
+
+        st.write(
+            f"**Serving:** {nutrition.get('serving', 'Not available')}"
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric(
+                "Calories",
+                f"{nutrition.get('calories', 0)} kcal"
+            )
+
+            st.metric(
+                "Protein",
+                f"{nutrition.get('protein', 0)} g"
+            )
+
+            st.metric(
+                "Carbs",
+                f"{nutrition.get('carbs', 0)} g"
+            )
+
+        with col2:
+            st.metric(
+                "Fat",
+                f"{nutrition.get('fat', 0)} g"
+            )
+
+            st.metric(
+                "Fiber",
+                f"{nutrition.get('fiber', 0)} g"
+            )

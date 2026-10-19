@@ -35,9 +35,7 @@ if not GEMINI_API_KEY:
     st.stop()
 
 
-# -----------------------------
 # Load Model
-# -----------------------------
 
 @st.cache_resource
 def load_model():
@@ -59,9 +57,7 @@ client = genai.Client(
 )
 
 
-# -----------------------------
 # Gemini Nutrition Function
-# -----------------------------
 
 def get_nutrition(food_name):
 
@@ -132,9 +128,7 @@ Rules:
         }
 
 
-# -----------------------------
 # Prediction Function
-# -----------------------------
 
 def predict_food(image):
 
@@ -159,9 +153,7 @@ def predict_food(image):
     return predicted_food, confidence
 
 
-# -----------------------------
 # UI
-# -----------------------------
 
 st.title("🍽️ NutriVision")
 
@@ -201,9 +193,7 @@ if uploaded_file is not None:
 
         st.success("Analysis complete!")
 
-        # -------------------------
         # Prediction Result
-        # -------------------------
 
         st.subheader("🍴 Food Detected")
 
@@ -214,9 +204,7 @@ if uploaded_file is not None:
             text=f"Confidence: {confidence * 100:.2f}%"
         )
 
-        # -------------------------
         # Nutrition
-        # -------------------------
 
         st.subheader("🥗 Estimated Nutrition")
 

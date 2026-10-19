@@ -10,11 +10,6 @@ from huggingface_hub import hf_hub_download
 from dotenv import load_dotenv
 from google import genai
 
-
-# -----------------------------
-# Page Configuration
-# -----------------------------
-
 st.set_page_config(
     page_title="NutriVision",
     page_icon="🍽️",
@@ -22,9 +17,7 @@ st.set_page_config(
 )
 
 
-# -----------------------------
 # Load Environment Variables
-# -----------------------------
 
 load_dotenv()
 
@@ -35,16 +28,14 @@ if not GEMINI_API_KEY:
     st.stop()
 
 
-# -----------------------------
 # Load Model
-# -----------------------------
 
 @st.cache_resource
 def load_model():
 
     model_path = hf_hub_download(
-        repo_id="Bhavesh540/NutriVision",
-        filename="FoodDetection.keras"
+        repo_id="Bhavesh540/Nutriv2",
+        filename="Nutriv2.keras"
     )
 
     return keras.models.load_model(model_path)
@@ -59,9 +50,7 @@ client = genai.Client(
 )
 
 
-# -----------------------------
 # Gemini Nutrition Function
-# -----------------------------
 
 def get_nutrition(food_name):
 
@@ -132,9 +121,7 @@ Rules:
         }
 
 
-# -----------------------------
 # Prediction Function
-# -----------------------------
 
 def predict_food(image):
 
@@ -159,9 +146,7 @@ def predict_food(image):
     return predicted_food, confidence
 
 
-# -----------------------------
 # UI
-# -----------------------------
 
 st.title("🍽️ NutriVision")
 
@@ -175,7 +160,7 @@ st.write(
 
 uploaded_file = st.file_uploader(
     "Upload a food image",
-    type=["jpg", "jpeg", "png"]
+    type=["jpg", "jpeg", "png","webp"]
 )
 
 
@@ -201,9 +186,7 @@ if uploaded_file is not None:
 
         st.success("Analysis complete!")
 
-        # -------------------------
         # Prediction Result
-        # -------------------------
 
         st.subheader("🍴 Food Detected")
 
@@ -214,9 +197,7 @@ if uploaded_file is not None:
             text=f"Confidence: {confidence * 100:.2f}%"
         )
 
-        # -------------------------
         # Nutrition
-        # -------------------------
 
         st.subheader("🥗 Estimated Nutrition")
 
